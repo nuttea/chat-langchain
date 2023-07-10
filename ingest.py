@@ -1,22 +1,30 @@
 """Load html from files, clean up, split, ingest into Weaviate."""
 import pickle
+import vertexai
 
-from langchain.document_loaders import ReadTheDocsLoader
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.document_loaders import UnstructuredFileLoader
+from langchain.embeddings import VertexAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 
+PROJECT_ID = "cloud-llm-preview4"
+REGION = "us-central1"
 
 def ingest_docs():
+    """Initialize Vertex AI"""
+    """gcloud config set project $PROJECT_ID"""
+    """gcloud auth application-default login"""
+    vertexai.init(project=PROJECT_ID, location=REGION)
+
     """Get documents from web pages."""
-    loader = ReadTheDocsLoader("langchain.readthedocs.io/en/latest/")
+    loader = UnstructuredFileLoader("./source-docs/raw-xpress-cash.html")
     raw_documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200,
     )
     documents = text_splitter.split_documents(raw_documents)
-    embeddings = OpenAIEmbeddings()
+    embeddings = VertexAIEmbeddings()
     vectorstore = FAISS.from_documents(documents, embeddings)
 
     # Save vectorstore
